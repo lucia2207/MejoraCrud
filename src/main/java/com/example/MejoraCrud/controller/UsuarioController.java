@@ -1,5 +1,6 @@
 package com.example.MejoraCrud.controller;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -7,7 +8,10 @@ import com.example.MejoraCrud.models.UsuarioModel;
 import com.example.MejoraCrud.services.UsuarioService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 
 @RestController
@@ -22,8 +26,27 @@ public class UsuarioController {
     }
 
     @PostMapping()
-    public UsuarioModel guardarUsuario(@RequestBody UsuarioModel usuario){
-        return this.usuarioService.guardarUsuario(usuario);
+    public ResponseEntity<UsuarioModel> guardarUsuario(@RequestBody UsuarioModel usuario) {
+        Long usuarioid = usuario.getId();
+
+        // se busca solucion a conflicto cuando un usuario viene con id incorporado
+        if (usuarioid != null) {
+            Optional<UsuarioModel> usuarioOpcional = this.usuarioService.obtenerPorId(usuarioid);
+
+            if (usuarioOpcional.isPresent()) {
+                // ya existe el usuario con ese id, devolver error 409
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            }
+
+            // si tiene id, pero no existe usuario, continuar creando
+            // el sistema lo crea con un nuevo id sin importar el incorporado
+        }
+
+        UsuarioModel nuevousuario = this.usuarioService.guardarUsuario(usuario);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(nuevousuario.getId()).toUri();
+
+        return ResponseEntity.created(location).build();
     }
 
     @PutMapping(path = "/{id}")
