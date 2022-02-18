@@ -50,10 +50,18 @@ public class UsuarioController {
     }
 
     @PutMapping(path = "/{id}")
-    public UsuarioModel modificarUsuario(@PathVariable("id") Long uid, @RequestBody UsuarioModel usuario){
+    public ResponseEntity<UsuarioModel> modificarUsuario(@PathVariable("id") Long uid, @RequestBody UsuarioModel usuario){
+        Optional<UsuarioModel> usuarioOpcional = this.usuarioService.obtenerPorId(uid);
+        // Verifico que el usuario exista
+        if (!usuarioOpcional.isPresent()) {
+            // Si no existe da un error 404
+            return ResponseEntity.notFound().build();
+        }
+
         usuario.setId(uid);
-        UsuarioModel usuarioModel = this.usuarioService.guardarUsuario(usuario);
-        return usuarioModel;
+        this.usuarioService.guardarUsuario(usuario);
+        // A diferencia de antes devuelve un estado 204
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping( path = "/{id}")
